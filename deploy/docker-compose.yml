@@ -1,0 +1,28 @@
+# On the VPS:  cp .env.example .env  (fill it in)  then  docker compose -f deploy/docker-compose.yml up -d --build
+# One-off commands:  docker compose -f deploy/docker-compose.yml run --rm scheduler probe --site encuentra24
+
+services:
+  scheduler:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: apartment-hunter
+    command: ["schedule", "--interval", "20", "--digest-hour", "8"]
+    env_file: ../.env
+    restart: unless-stopped
+    volumes:
+      - probes:/home/hunter/probes
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+
+  bot:
+    image: apartment-hunter
+    depends_on: [scheduler]
+    command: ["bot"]
+    env_file: ../.env
+    restart: unless-stopped
+    logging:
+      options: { max-size: "5m", max-file: "2" }
+
+volumes:
+  probes:
